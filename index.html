@@ -1,33 +1,200 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Karla">
-    <style>
-        body {
-            font-family: karla;
-            font-size: 20px;
-        }
-        canvas {
-            margin-bottom: 400px;
-            width: 100%;
-            border: 1px solid #b7b8bc;
-            z-index: 1;
-        }
-        #content {
-		position: absolute;
-		left: 50%;
-		margin-left: -400px;
-		width: 800px;
-		height: 800px;
-        }        
-    </style>
-    <title>Proller's Crow Sim</title>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Karla">
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+			background-color: #f0f0f0;
+		}
+		canvas {
+			width: 100vw;
+			height: 100vh;
+		}     
+	</style>
+	<title>Proller's Crow Sim</title>
 </head>
-<body>
-	<div id="content">
-    		<canvas id=canvas width=800 height=500></canvas>
-	</div>
-	<script></script>
+<body onload="render()">
+<canvas id="canvas"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+let width = canvas.offsetWidth;
+let height = canvas.offsetHeight;
+const ctx = canvas.getContext('2d');
+
+// Function called right after user resized its screen
+function onResize () {
+	// We need to define the dimensions of the canvas to our canvas element
+	// Javascript doesn't know the computed dimensions from CSS so we need to do it manually
+	width = canvas.offsetWidth;
+	height = canvas.offsetHeight;
+  
+	// If the screen device has a pixel ratio over 1
+	// We render the canvas twice bigger to make it sharper (e.g. Retina iPhone)
+	if (window.devicePixelRatio > 1) {
+		canvas.width = canvas.clientWidth * 2;
+		canvas.height = canvas.clientHeight * 2;
+		ctx.scale(2, 2);
+	} else {
+		canvas.width = width;
+		canvas.height = height;
+	}
+}
+// Listen to resize events
+window.addEventListener('resize', onResize);
+// Make sure the canvas size is perfect
+onResize();
+
+let PERSPECTIVE = 1000; // The field of view of our 3D scene
+let PROJECTION_CENTER_X = width / 2; // x center of the canvas
+let PROJECTION_CENTER_Y = height / 2; // y center of the canvas
+
+class Point {
+	constructor(x, y, z) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+
+		this.xOffset = x;
+		this.yOffset = y;
+		this.zOffset = z;
+    
+		this.xProjected = 0; // x coordinate on the 2D world
+		this.yProjected = 0; // y coordinate on the 2D world
+		this.scaleProjected = 0; // Scale of the element on the 2D world (further = smaller)
+	}
+	// Project our element from its 3D world to the 2D canvas
+	project() {
+		// The scaleProjected will store the scale of the element based on its distance from the 'camera'
+		this.scaleProjected = PERSPECTIVE / (PERSPECTIVE + this.z);
+		// The xProjected is the x position on the 2D world
+		this.xProjected = (this.x * this.scaleProjected) + PROJECTION_CENTER_X;
+		// The yProjected is the y position on the 2D world
+		this.yProjected = (this.y * this.scaleProjected) + PROJECTION_CENTER_Y;
+	}
+	// Draw the dot on the canvas
+	draw() {
+		// We first calculate the projected values of our dot
+		this.project();
+		// We draw a rectangle based on the projected coordinates and scale
+		ctx.beginPath();
+		ctx.arc(this.xProjected, this.yProjected, 2 * this.scaleProjected, 0, Math.PI*2);
+		ctx.fill();
+	}
+}
+
+class Line {
+	constructor(pointA, pointB) {
+		this.pointA = pointA;
+		this.pointB = pointB;
+	}
+
+	draw() {
+		this.pointA.project();
+		this.pointB.project();
+		ctx.beginPath();
+		ctx.moveTo(this.pointA.xProjected, this.pointA.yProjected);
+		ctx.lineTo(this.pointB.xProjected, this.pointB.yProjected);
+		ctx.stroke();
+	}
+}
+
+class Polygon {
+	constructor(points) {
+		this.points = points; //array of points
+	}
+	// Draw the polygon with option of wireframe (solid if false)
+	draw(wireframe) {
+		if (this.points.length < 1) {
+			return;
+		}
+		this.points[0].project();
+		ctx.beginPath();
+		ctx.moveTo(this.points[0].xProjected, this.points[0].yProjected);
+		for (var i = 1; i < this.points.length; i++) {
+			this.points[i].project();
+			ctx.lineTo(this.points[i].xProjected, this.points[i].yProjected);
+		}
+		ctx.lineTo(this.points[0].xProjected, this.points[0].yProjected);
+		if (wireframe) {
+			ctx.stroke();
+		} else {
+			ctx.globalAlpha = .3;
+			ctx.fill();
+			ctx.globalAlpha = 1;
+		}
+	}
+}
+
+// TO DO: figure out how to parent the origin to a moving point on another solid
+class Solid {
+	constructor(polygons, origin, scale) {
+		this.polygons = polygons; //array of polygons relative to origin
+		this.origin = origin; //point
+		this.scale = scale;
+		this.rotation = [0, 0, 0];
+	}
+
+
+	// draw the solid at its origin and rotated according to angles
+	draw(wireframe) {
+		for (var i = 0; i < this.polygons.length; i++) {
+			// duplicate current polygon
+			let drawnPoints = [];
+			for (var j = 0; j < this.polygons[i].points.length; j++) {
+				drawnPoints.push(new Point(this.polygons[i].points[j].x, this.polygons[i].points[j].y, this.polygons[i].points[j].z));
+			}
+			let drawnPolygon = new Polygon(drawnPoints);
+
+			// update position to fit origin
+			for (var j = 0; j < drawnPolygon.points.length; j++) {
+				drawnPolygon.points[j].x += this.origin.x;
+				drawnPolygon.points[j].y += this.origin.y;
+				drawnPolygon.points[j].z += this.origin.z;
+			}
+
+			// rotate using origin as axis
+
+			drawnPolygon.draw(wireframe);
+		}
+	}
+}
+
+// Create Polygons
+const cubePoints = [];
+cubePoints.push(new Point(-250, -250, 0));
+cubePoints.push(new Point(-250, -250, 500));
+cubePoints.push(new Point(250, -250, 0));
+cubePoints.push(new Point(250, -250, 500));
+cubePoints.push(new Point(-250, 250, 0));
+cubePoints.push(new Point(-250, 250, 500));
+cubePoints.push(new Point(250, 250, 0));
+cubePoints.push(new Point(250, 250, 500));
+
+const polyCube = [];
+polyCube.push(new Polygon([cubePoints[0], cubePoints[1], cubePoints[3], cubePoints[2]]));
+polyCube.push(new Polygon([cubePoints[4], cubePoints[5], cubePoints[7], cubePoints[6]]));
+polyCube.push(new Polygon([cubePoints[0], cubePoints[2], cubePoints[6], cubePoints[4]]));
+polyCube.push(new Polygon([cubePoints[1], cubePoints[0], cubePoints[4], cubePoints[5]]));
+polyCube.push(new Polygon([cubePoints[3], cubePoints[1], cubePoints[5], cubePoints[7]]));
+polyCube.push(new Polygon([cubePoints[2], cubePoints[3], cubePoints[7], cubePoints[6]]));
+
+const cube = new Solid(polyCube, new Point(0, 0, 0), 1);
+
+let timer = 0;
+function render() {
+	// Clear the scene from top left to bottom right
+	ctx.clearRect(0, 0, width, height);
+
+	cube.origin = new Point(Math.sin(timer/50)*2000, Math.sin(timer/100)*200, Math.cos(timer/50)*500+2000);
+	cube.draw(false);
+	timer++;
+  
+	// Request the browser the call render once its ready for a new frame
+	window.requestAnimationFrame(render);
+}
+
+</script>
 </body>
 </html>
