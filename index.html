@@ -127,11 +127,12 @@ class Polygon {
 
 // TO DO: figure out how to parent the origin to a moving point on another solid
 class Solid {
-	constructor(polygons, origin, scale) {
+	constructor(polygons, origin, scale, parent) {
 		this.polygons = polygons; //array of polygons relative to origin
 		this.origin = origin; //point
 		this.scale = scale;
-		this.rotation = [0, 0, Math.PI/2];
+		this.rotation = [0, 0, 0];
+		this.parent = parent;
 	}
 
 
@@ -147,8 +148,13 @@ class Solid {
 
 			// rotate using origin as axis
 			// z-axis
-			var sinTheta = Math.sin(this.rotation[2]);
-			var cosTheta = Math.cos(this.rotation[2]);
+			if (this.parent) {
+				var sinTheta = Math.sin(this.rotation[2] + this.parent.rotation[2]);
+				var cosTheta = Math.cos(this.rotation[2] + this.parent.rotation[2]);
+			} else {
+				var sinTheta = Math.sin(this.rotation[2]);
+				var cosTheta = Math.cos(this.rotation[2]);
+			}
 			for (var j = 0; j < drawnPolygon.points.length; j++) {
 				var points = drawnPolygon.points;
 				var x = points[j].x;
@@ -158,8 +164,13 @@ class Solid {
 			}
 
 			// x-axis
-			sinTheta = Math.sin(this.rotation[0]);
-			cosTheta = Math.cos(this.rotation[0]);
+			if (this.parent) {
+				var sinTheta = Math.sin(this.rotation[0] + this.parent.rotation[0]);
+				var cosTheta = Math.cos(this.rotation[0] + this.parent.rotation[0]);
+			} else {
+				sinTheta = Math.sin(this.rotation[0]);
+				cosTheta = Math.cos(this.rotation[0]);
+			}
 			for (var j = 0; j < drawnPolygon.points.length; j++) {
 				var points = drawnPolygon.points;
 				var y = points[j].y;
@@ -169,8 +180,13 @@ class Solid {
 			}
 
 			// y-axis
-			sinTheta = Math.sin(this.rotation[1]);
-			cosTheta = Math.cos(this.rotation[1]);
+			if (this.parent) {
+				var sinTheta = Math.sin(this.rotation[1] + this.parent.rotation[1]);
+				var cosTheta = Math.cos(this.rotation[1] + this.parent.rotation[1]);
+			} else {
+				sinTheta = Math.sin(this.rotation[1]);
+				cosTheta = Math.cos(this.rotation[1]);
+			}
 			for (var j = 0; j < drawnPolygon.points.length; j++) {
 				var points = drawnPolygon.points;
 				var x = points[j].x;
@@ -181,11 +197,20 @@ class Solid {
 			
 
 			// update position to fit origin
-			for (var j = 0; j < drawnPolygon.points.length; j++) {
-				drawnPolygon.points[j].x += this.origin.x;
-				drawnPolygon.points[j].y += this.origin.y;
-				drawnPolygon.points[j].z += this.origin.z;
+			if (this.parent) {
+				for (var j = 0; j < drawnPolygon.points.length; j++) {
+					drawnPolygon.points[j].x += this.origin.x + this.parent.origin.x;
+					drawnPolygon.points[j].y += this.origin.y + this.parent.origin.y;
+					drawnPolygon.points[j].z += this.origin.z + this.parent.origin.z;
+				}
+			} else {
+				for (var j = 0; j < drawnPolygon.points.length; j++) {
+					drawnPolygon.points[j].x += this.origin.x;
+					drawnPolygon.points[j].y += this.origin.y;
+					drawnPolygon.points[j].z += this.origin.z;
+				}
 			}
+			
 
 			
 
@@ -224,17 +249,24 @@ polyCube.push(new Polygon([cubePoints[1], cubePoints[0], cubePoints[4], cubePoin
 polyCube.push(new Polygon([cubePoints[3], cubePoints[1], cubePoints[5], cubePoints[7]]));
 polyCube.push(new Polygon([cubePoints[2], cubePoints[3], cubePoints[7], cubePoints[6]]));
 
-const cube = new Solid(polyCube, new Point(0, 0, 0), 1);
+const cube = new Solid(polyCube, new Point(0, 0, 0), .5);
+const cube2 = new Solid(polyCube, new Point(0, 0, 0), 1.2, cube);
+const cube3 = new Solid(polyCube, new Point(0, 0, 0), 2.2);
 
 let timer = 0;
 function render() {
 	// Clear the scene from top left to bottom right
 	ctx.clearRect(0, 0, width, height);
 
-	//cube.origin = new Point(Math.sin(timer/50)*2000, 0, Math.cos(timer/50)*500+2000);
-	//cube.origin = new Point(0, 0, 0);
+	cube.origin = new Point(0, Math.sin(timer/50)*50, 0);
+	cube3.origin = new Point(0, Math.sin(timer/50)*50, 0);
+
 	cube.rotation = [timer/20, timer/20, timer/20];
+	cube2.rotation = [-timer/10, -timer/10, -timer/10];
+	cube3.rotation = [timer/500, timer/500, timer/500];
 	cube.draw(true);
+	cube2.draw(true);
+	cube3.draw(true);
 	timer++;
   
 	// Request the browser the call render once its ready for a new frame
