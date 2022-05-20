@@ -120,9 +120,7 @@ class Polygon {
 		if (wireframe) {
 			ctx.stroke();
 		} else {
-			ctx.globalAlpha = .3;
 			ctx.fill();
-			ctx.globalAlpha = 1;
 		}
 	}
 }
@@ -133,19 +131,54 @@ class Solid {
 		this.polygons = polygons; //array of polygons relative to origin
 		this.origin = origin; //point
 		this.scale = scale;
-		this.rotation = [0, 0, 0];
+		this.rotation = [0, 0, Math.PI/2];
 	}
 
 
 	// draw the solid at its origin and rotated according to angles
 	draw(wireframe) {
 		for (var i = 0; i < this.polygons.length; i++) {
-			// duplicate current polygon
+			// duplicate current polygon at new scale
 			let drawnPoints = [];
 			for (var j = 0; j < this.polygons[i].points.length; j++) {
-				drawnPoints.push(new Point(this.polygons[i].points[j].x, this.polygons[i].points[j].y, this.polygons[i].points[j].z));
+				drawnPoints.push(new Point(this.polygons[i].points[j].x * this.scale, this.polygons[i].points[j].y * this.scale, this.polygons[i].points[j].z * this.scale));
 			}
 			let drawnPolygon = new Polygon(drawnPoints);
+
+			// rotate using origin as axis
+			// z-axis
+			var sinTheta = Math.sin(this.rotation[2]);
+			var cosTheta = Math.cos(this.rotation[2]);
+			for (var j = 0; j < drawnPolygon.points.length; j++) {
+				var points = drawnPolygon.points;
+				var x = points[j].x;
+				var y = points[j].y;
+				points[j].x = x * cosTheta - y * sinTheta;
+				points[j].y = y * cosTheta + x * sinTheta;
+			}
+
+			// x-axis
+			sinTheta = Math.sin(this.rotation[0]);
+			cosTheta = Math.cos(this.rotation[0]);
+			for (var j = 0; j < drawnPolygon.points.length; j++) {
+				var points = drawnPolygon.points;
+				var y = points[j].y;
+				var z = points[j].z;
+				points[j].y = y * cosTheta - z * sinTheta;
+				points[j].z = z * cosTheta + y * sinTheta;
+			}
+
+			// y-axis
+			sinTheta = Math.sin(this.rotation[1]);
+			cosTheta = Math.cos(this.rotation[1]);
+			for (var j = 0; j < drawnPolygon.points.length; j++) {
+				var points = drawnPolygon.points;
+				var x = points[j].x;
+				var z = points[j].z;
+				points[j].x = x * cosTheta + z * sinTheta;
+				points[j].z = z * cosTheta - x * sinTheta;
+			}
+			
 
 			// update position to fit origin
 			for (var j = 0; j < drawnPolygon.points.length; j++) {
@@ -154,8 +187,10 @@ class Solid {
 				drawnPolygon.points[j].z += this.origin.z;
 			}
 
-			// rotate using origin as axis
+			
 
+
+			// draw the polygon
 			drawnPolygon.draw(wireframe);
 		}
 	}
@@ -163,14 +198,23 @@ class Solid {
 
 // Create Polygons
 const cubePoints = [];
-cubePoints.push(new Point(-250, -250, 0));
-cubePoints.push(new Point(-250, -250, 500));
-cubePoints.push(new Point(250, -250, 0));
-cubePoints.push(new Point(250, -250, 500));
-cubePoints.push(new Point(-250, 250, 0));
-cubePoints.push(new Point(-250, 250, 500));
-cubePoints.push(new Point(250, 250, 0));
-cubePoints.push(new Point(250, 250, 500));
+cubePoints.push(new Point(-50, -50, -50));
+cubePoints.push(new Point(-50, -50, 50));
+cubePoints.push(new Point(50, -50, -50));
+cubePoints.push(new Point(50, -50, 50));
+cubePoints.push(new Point(-50, 50, -50));
+cubePoints.push(new Point(-50, 50, 50));
+cubePoints.push(new Point(50, 50, -50));
+cubePoints.push(new Point(50, 50, 50));
+
+/*cubePoints.push(new Point(0, 0, 0));
+cubePoints.push(new Point(0, 0, 100));
+cubePoints.push(new Point(100, 0, 0));
+cubePoints.push(new Point(100, 0, 100));
+cubePoints.push(new Point(0, 100, 0));
+cubePoints.push(new Point(0, 100, 100));
+cubePoints.push(new Point(100, 100, 0));
+cubePoints.push(new Point(100, 100, 100));*/
 
 const polyCube = [];
 polyCube.push(new Polygon([cubePoints[0], cubePoints[1], cubePoints[3], cubePoints[2]]));
@@ -187,7 +231,9 @@ function render() {
 	// Clear the scene from top left to bottom right
 	ctx.clearRect(0, 0, width, height);
 
-	cube.origin = new Point(Math.sin(timer/50)*2000, Math.sin(timer/100)*200, Math.cos(timer/50)*500+2000);
+	//cube.origin = new Point(Math.sin(timer/50)*2000, 0, Math.cos(timer/50)*500+2000);
+	//cube.origin = new Point(0, 0, 0);
+	cube.rotation = [timer/20, timer/20, timer/20];
 	cube.draw(true);
 	timer++;
   
