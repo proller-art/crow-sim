@@ -46,7 +46,7 @@ window.addEventListener('resize', onResize);
 // Make sure the canvas size is perfect
 onResize();
 
-let PERSPECTIVE = 1000; // The field of view of our 3D scene
+let PERSPECTIVE = 100000; // The field of view of our 3D scene
 let PROJECTION_CENTER_X = width / 2; // x center of the canvas
 let PROJECTION_CENTER_Y = height / 2; // y center of the canvas
 
@@ -241,6 +241,46 @@ cubePoints.push(new Point(0, 100, 100));
 cubePoints.push(new Point(100, 100, 0));
 cubePoints.push(new Point(100, 100, 100));*/
 
+const headPoints = [];
+headPoints.push(new Point(-3, -2, 1));
+headPoints.push(new Point(3, -2, 1));
+headPoints.push(new Point(7, -0, 4));
+headPoints.push(new Point(0, -0, 19));
+headPoints.push(new Point(-7, -0, 4));
+headPoints.push(new Point(-5, -5, 8));
+headPoints.push(new Point(5, -5, 8));
+
+const bodyPoints = [];
+bodyPoints.push(new Point(-3, 2, 7));
+bodyPoints.push(new Point(3, 2, 7));
+bodyPoints.push(new Point(6, -6, 5));
+bodyPoints.push(new Point(5, 6, -12));
+bodyPoints.push(new Point(0, 6, -18));
+bodyPoints.push(new Point(-5, 6, -12));
+bodyPoints.push(new Point(-6, -6, 5));
+
+const polyHead = [];
+polyHead.push(new Polygon([headPoints[5],headPoints[0],headPoints[1],headPoints[6]]));
+polyHead.push(new Polygon([headPoints[4],headPoints[0],headPoints[1],headPoints[2]]));
+polyHead.push(new Polygon([headPoints[4],headPoints[0],headPoints[5]]));
+polyHead.push(new Polygon([headPoints[6],headPoints[1],headPoints[2]]));
+polyHead.push(new Polygon([headPoints[3],headPoints[4],headPoints[5]]));
+polyHead.push(new Polygon([headPoints[3],headPoints[5],headPoints[6]]));
+polyHead.push(new Polygon([headPoints[3],headPoints[4],headPoints[2]]));
+polyHead.push(new Polygon([headPoints[3],headPoints[6],headPoints[2]]));
+
+const polyBody = [];
+polyBody.push(new Polygon([bodyPoints[0],bodyPoints[1],bodyPoints[2],bodyPoints[6]]));
+polyBody.push(new Polygon([bodyPoints[5],bodyPoints[3],bodyPoints[1],bodyPoints[0]]));
+polyBody.push(new Polygon([bodyPoints[6],bodyPoints[2],bodyPoints[4]]));
+polyBody.push(new Polygon([bodyPoints[4],bodyPoints[2],bodyPoints[3]]));
+polyBody.push(new Polygon([bodyPoints[4],bodyPoints[6],bodyPoints[5]]));
+polyBody.push(new Polygon([bodyPoints[5],bodyPoints[0],bodyPoints[6]]));
+polyBody.push(new Polygon([bodyPoints[3],bodyPoints[1],bodyPoints[2]]));
+polyBody.push(new Polygon([bodyPoints[4],bodyPoints[5],bodyPoints[3]]));
+
+
+
 const polyCube = [];
 polyCube.push(new Polygon([cubePoints[0], cubePoints[1], cubePoints[3], cubePoints[2]]));
 polyCube.push(new Polygon([cubePoints[4], cubePoints[5], cubePoints[7], cubePoints[6]]));
@@ -249,24 +289,33 @@ polyCube.push(new Polygon([cubePoints[1], cubePoints[0], cubePoints[4], cubePoin
 polyCube.push(new Polygon([cubePoints[3], cubePoints[1], cubePoints[5], cubePoints[7]]));
 polyCube.push(new Polygon([cubePoints[2], cubePoints[3], cubePoints[7], cubePoints[6]]));
 
+
+const head = new Solid(polyHead, new Point(0, 0, 0), 20);
+const head2 = new Solid(polyHead, new Point(0, 0, 0), 10, head);
+const body = new Solid(polyBody, new Point(0, 120, 0), 20, head);
 const cube = new Solid(polyCube, new Point(0, 0, 0), .5);
 const cube2 = new Solid(polyCube, new Point(0, 0, 0), 1.2, cube);
-const cube3 = new Solid(polyCube, new Point(0, 0, 0), 2.2);
+const cube3 = new Solid(polyCube, new Point(0, 0, 0), 2.2, cube);
 
 let timer = 0;
 function render() {
 	// Clear the scene from top left to bottom right
 	ctx.clearRect(0, 0, width, height);
 
-	cube.origin = new Point(0, Math.sin(timer/50)*50, 0);
-	cube3.origin = new Point(0, Math.sin(timer/50)*50, 0);
+	//cube.origin = new Point(0, Math.sin(timer/50)*50, 0);
+	//cube3.origin = new Point(0, Math.sin(timer/50)*50, 0);
+	//head.origin = new Point(0, Math.sin(timer/50)*50, 0);
 
-	cube.rotation = [timer/20, timer/20, timer/20];
-	cube2.rotation = [-timer/10, -timer/10, -timer/10];
-	cube3.rotation = [timer/500, timer/500, timer/500];
-	cube.draw(true);
-	cube2.draw(true);
-	cube3.draw(true);
+	//cube.rotation = [Math.PI/8, timer/20, 0];
+	//cube2.rotation = [-timer/10, -timer/10, -timer/10];
+	//cube3.rotation = [timer/50, timer/50, timer/50];
+	head.rotation = [timer/10, timer/10, timer/10];
+	//cube.draw(false);
+	//cube2.draw(true);
+	//cube3.draw(true);
+	head.draw(true);
+	body.draw(true);
+	//head2.draw(false);
 	timer++;
   
 	// Request the browser the call render once its ready for a new frame
