@@ -80,7 +80,9 @@ class Point {
 		// We draw a rectangle based on the projected coordinates and scale
 		ctx.beginPath();
 		ctx.arc(this.xProjected, this.yProjected, 2 * this.scaleProjected, 0, Math.PI*2);
+		ctx.fillStyle = "#DD0000";
 		ctx.fill();
+		ctx.fillStyle = "#000000";
 	}
 }
 
@@ -120,12 +122,15 @@ class Polygon {
 		if (wireframe) {
 			ctx.stroke();
 		} else {
+			ctx.fillStyle = "rgb(" + this.points[0].x + ", " + this.points[0].y + ", " + this.points[0].z + ")";
 			ctx.fill();
 		}
 	}
 }
 
-// TO DO: figure out how to parent the origin to a moving point on another solid
+// TO DO: 
+// - parenting chains
+// - 
 class Solid {
 	constructor(polygons, origin, scale, parent) {
 		this.polygons = polygons; //array of polygons relative to origin
@@ -135,6 +140,40 @@ class Solid {
 		this.parent = parent;
 	}
 
+	// takes child position and returns new point that is relative to this solid's origin and rotation
+	relatePoint(point) {
+		//z axis
+		var sinTheta = Math.sin(this.rotation[2]);
+		var cosTheta = Math.cos(this.rotation[2]);
+
+		var x = point.x;
+		var y = point.y;
+		point.x = x * cosTheta - y * sinTheta;
+		point.y = y * cosTheta + x * sinTheta;
+
+		// x-axis
+		sinTheta = Math.sin(this.rotation[0]);
+		cosTheta = Math.cos(this.rotation[0]);
+
+		var y = point.y;
+		var z = point.z;
+		point.y = y * cosTheta - z * sinTheta;
+		point.z = z * cosTheta + y * sinTheta;
+
+		// y-axis
+		sinTheta = Math.sin(this.rotation[1]);
+		cosTheta = Math.cos(this.rotation[1]);
+
+		var x = point.x;
+		var z = point.z;
+		point.x = x * cosTheta + z * sinTheta;
+		point.z = z * cosTheta - x * sinTheta;
+
+		//update position based on parent origin
+		point.x += this.origin.x;
+		point.y += this.origin.y;
+		point.z += this.origin.z;
+	}
 
 	// draw the solid at its origin and rotated according to angles
 	draw(wireframe) {
@@ -198,17 +237,21 @@ class Solid {
 
 			// update position to fit origin
 			if (this.parent) {
+				var relatedPoint = new Point(this.origin.x, this.origin.y, this.origin.z);
+				this.parent.relatePoint(relatedPoint);
 				for (var j = 0; j < drawnPolygon.points.length; j++) {
-					drawnPolygon.points[j].x += this.origin.x + this.parent.origin.x;
-					drawnPolygon.points[j].y += this.origin.y + this.parent.origin.y;
-					drawnPolygon.points[j].z += this.origin.z + this.parent.origin.z;
+					drawnPolygon.points[j].x += relatedPoint.x;
+					drawnPolygon.points[j].y += relatedPoint.y;
+					drawnPolygon.points[j].z += relatedPoint.z;
 				}
+				//relatedPoint.draw();
 			} else {
 				for (var j = 0; j < drawnPolygon.points.length; j++) {
 					drawnPolygon.points[j].x += this.origin.x;
 					drawnPolygon.points[j].y += this.origin.y;
 					drawnPolygon.points[j].z += this.origin.z;
 				}
+				//this.origin.draw();
 			}
 
 			// draw the polygon
@@ -228,23 +271,32 @@ cubePoints.push(new Point(-50, 50, 50));
 cubePoints.push(new Point(50, 50, -50));
 cubePoints.push(new Point(50, 50, 50));
 
+/*cubePoints.push(new Point(0, 0, 0));
+cubePoints.push(new Point(0, 0, 100));
+cubePoints.push(new Point(100, 0, 0));
+cubePoints.push(new Point(100, 0, 100));
+cubePoints.push(new Point(0, 100, 0));
+cubePoints.push(new Point(0, 100, 100));
+cubePoints.push(new Point(100, 100, 0));
+cubePoints.push(new Point(100, 100, 100));*/
+
 const headPoints = [];
-headPoints.push(new Point(-3, -2, 1));
-headPoints.push(new Point(3, -2, 1));
-headPoints.push(new Point(7, -0, 4));
-headPoints.push(new Point(0, -0, 19));
-headPoints.push(new Point(-7, -0, 4));
-headPoints.push(new Point(-5, -5, 8));
-headPoints.push(new Point(5, -5, 8));
+headPoints.push(new Point(-3, -2, -6));
+headPoints.push(new Point(3, -2, -6));
+headPoints.push(new Point(7, 0, -3));
+headPoints.push(new Point(0, 0, 12));
+headPoints.push(new Point(-7, 0, -3));
+headPoints.push(new Point(-4, -6, 1));
+headPoints.push(new Point(4, -6, 1));
 
 const bodyPoints = [];
-bodyPoints.push(new Point(-3, 2, 7));
-bodyPoints.push(new Point(3, 2, 7));
-bodyPoints.push(new Point(6, -6, 5));
+bodyPoints.push(new Point(-2, 2, 7));
+bodyPoints.push(new Point(2, 2, 7));
+bodyPoints.push(new Point(4, -6, 5));
 bodyPoints.push(new Point(5, 6, -9));
 bodyPoints.push(new Point(0, 5, -18));
 bodyPoints.push(new Point(-5, 6, -9));
-bodyPoints.push(new Point(-6, -6, 5));
+bodyPoints.push(new Point(-4, -6, 5));
 
 const polyHead = [];
 polyHead.push(new Polygon([headPoints[5],headPoints[0],headPoints[1],headPoints[6]]));
@@ -266,6 +318,8 @@ polyBody.push(new Polygon([bodyPoints[5],bodyPoints[0],bodyPoints[6]]));
 polyBody.push(new Polygon([bodyPoints[3],bodyPoints[1],bodyPoints[2]]));
 polyBody.push(new Polygon([bodyPoints[4],bodyPoints[5],bodyPoints[3]]));
 
+
+
 const polyCube = [];
 polyCube.push(new Polygon([cubePoints[0], cubePoints[1], cubePoints[3], cubePoints[2]]));
 polyCube.push(new Polygon([cubePoints[4], cubePoints[5], cubePoints[7], cubePoints[6]]));
@@ -274,20 +328,32 @@ polyCube.push(new Polygon([cubePoints[1], cubePoints[0], cubePoints[4], cubePoin
 polyCube.push(new Polygon([cubePoints[3], cubePoints[1], cubePoints[5], cubePoints[7]]));
 polyCube.push(new Polygon([cubePoints[2], cubePoints[3], cubePoints[7], cubePoints[6]]));
 
-
-const head = new Solid(polyHead, new Point(0, 0, 0), 12);
-const body = new Solid(polyBody, new Point(0, 60, 0), 12, head);
-const cube = new Solid(polyCube, new Point(0, 0, 0), 5, head);
+const cube = new Solid(polyCube, new Point(0, 0, 0), 5);
+const cube2 = new Solid(polyCube, new Point(0, 100, 0), 1, cube);
+const cube3 = new Solid(polyCube, new Point(100, 0, 0), 1, cube);
+const body = new Solid(polyBody, new Point(0, 0, 0), 12, cube);
+const head = new Solid(polyHead, new Point(0, -60, 50), 12, cube);
 
 let timer = 0;
 function render() {
 	// Clear the scene from top left to bottom right
 	ctx.clearRect(0, 0, width, height);
 
-	head.rotation = [0, timer/20, 0];
+	cube.origin = new Point(Math.sin(timer/50)*200, Math.sin(timer/50)*50, Math.cos(timer/50)*200);
+	//cube3.origin = new Point(0, Math.sin(timer/50)*50, 0);
+	//body.origin = new Point(0, Math.sin(timer/50)*50, 0);
+
+	cube.rotation = [timer/150, timer/100, timer/50];
+	//cube2.rotation = [0, 0, timer/100];
+	//cube3.rotation = [timer/50, timer/50, timer/50];
+	//body.rotation = [0, Math.PI/2, 0];
+	//head.rotation = [0, timer/100, 0];
 	cube.draw(true);
-	head.draw(false);
+	//cube2.draw(true);
+	//cube3.draw(true);
 	body.draw(false);
+	head.draw(false);
+
 	timer++;
   
 	// Request the browser the call render once its ready for a new frame
