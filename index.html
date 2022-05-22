@@ -6,7 +6,7 @@
 		body {
 			margin: 0;
 			overflow: hidden;
-			background-color: #f0f0f0;
+			background-color: #999999;
 		}
 		canvas {
 			width: 100vw;
@@ -221,6 +221,18 @@ class Solid {
 			this.parent.relatePolygon(polygon);
 		}
 	}
+	// takes polygon and scales it based off parent chain
+	relateScale(polygon) {
+		for (var j = 0; j < polygon.points.length; j++) {
+			polygon.points[j].x = polygon.points[j].x * this.scale;
+			polygon.points[j].y = polygon.points[j].y * this.scale;
+			polygon.points[j].z = polygon.points[j].z * this.scale;
+		}
+		if (this.parent) {
+			this.parent.relateScale(polygon);
+		}
+	}
+
 
 	// draw the solid at its origin and rotated according to angles
 	draw(wireframe) {
@@ -228,7 +240,7 @@ class Solid {
 			// duplicate current polygon at new scale
 			let drawnPoints = [];
 			for (var j = 0; j < this.polygons[i].points.length; j++) {
-				drawnPoints.push(new Point(this.polygons[i].points[j].x * this.scale, this.polygons[i].points[j].y * this.scale, this.polygons[i].points[j].z * this.scale));
+				drawnPoints.push(new Point(this.polygons[i].points[j].x, this.polygons[i].points[j].y, this.polygons[i].points[j].z));
 			}
 			let drawnPolygon = new Polygon(drawnPoints);
 
@@ -273,7 +285,17 @@ class Solid {
 				this.parent.relatePolygon(drawnPolygon);
 			}
 			
-
+			//adjust scale
+			for (var j = 0; j < drawnPolygon.points.length; j++) {
+				drawnPolygon.points[j].x = drawnPolygon.points[j].x * this.scale;
+				drawnPolygon.points[j].y = drawnPolygon.points[j].y * this.scale;
+				drawnPolygon.points[j].z = drawnPolygon.points[j].z * this.scale;
+			}
+			if (this.parent) {
+				this.parent.relateScale(drawnPolygon);
+			}
+			
+	
 			// update position to fit origin
 			if (this.parent) {
 				var relatedPoint = new Point(this.origin.x, this.origin.y, this.origin.z);
@@ -283,14 +305,14 @@ class Solid {
 					drawnPolygon.points[j].y += relatedPoint.y;
 					drawnPolygon.points[j].z += relatedPoint.z;
 				}
-				//relatedPoint.draw();
+				relatedPoint.draw();
 			} else {
 				for (var j = 0; j < drawnPolygon.points.length; j++) {
 					drawnPolygon.points[j].x += this.origin.x;
 					drawnPolygon.points[j].y += this.origin.y;
 					drawnPolygon.points[j].z += this.origin.z;
 				}
-				//this.origin.draw();
+				this.origin.draw();
 			}
 
 			// draw the polygon
@@ -311,22 +333,22 @@ cubePoints.push(new Point(50, 50, -50));
 cubePoints.push(new Point(50, 50, 50));
 
 const headPoints = [];
-headPoints.push(new Point(-3, -2, -6));
-headPoints.push(new Point(3, -2, -6));
-headPoints.push(new Point(7, 0, -3));
+headPoints.push(new Point(-2, -2, -6));
+headPoints.push(new Point(2, -2, -6));
+headPoints.push(new Point(5, 0, -3));
 headPoints.push(new Point(0, 0, 12));
-headPoints.push(new Point(-7, 0, -3));
-headPoints.push(new Point(-4, -6, 1));
-headPoints.push(new Point(4, -6, 1));
+headPoints.push(new Point(-5, 0, -3));
+headPoints.push(new Point(-3, -6, 1));
+headPoints.push(new Point(3, -6, 1));
 
 const bodyPoints = [];
 bodyPoints.push(new Point(-2, 2, 7));
 bodyPoints.push(new Point(2, 2, 7));
-bodyPoints.push(new Point(4, -6, 5));
+bodyPoints.push(new Point(3, -6, 5));
 bodyPoints.push(new Point(5, 6, -9));
 bodyPoints.push(new Point(0, 5, -18));
 bodyPoints.push(new Point(-5, 6, -9));
-bodyPoints.push(new Point(-4, -6, 5));
+bodyPoints.push(new Point(-3, -6, 5));
 
 
 
@@ -358,9 +380,9 @@ polyCube.push(new Polygon([cubePoints[1], cubePoints[0], cubePoints[4], cubePoin
 polyCube.push(new Polygon([cubePoints[3], cubePoints[1], cubePoints[5], cubePoints[7]]));
 polyCube.push(new Polygon([cubePoints[2], cubePoints[3], cubePoints[7], cubePoints[6]]));
 
-const cube = new Solid(polyCube, new Point(0, 0, 0), 5);
-const body = new Solid(polyBody, new Point(0, 0, 0), 12, cube);
-const head = new Solid(polyHead, new Point(0, -60, 50), 12, body);
+const cube = new Solid(polyCube, new Point(0, 0, 0), 3);
+const body = new Solid(polyBody, new Point(0, 0, 0), 12);
+const head = new Solid(polyHead, new Point(0, -5, 4), 1, body);
 
 let timer = 0;
 function render() {
@@ -368,12 +390,14 @@ function render() {
 	ctx.clearRect(0, 0, width, height);
 
 	//cube.origin = new Point(Math.sin(timer/100)*300, Math.sin(timer/150)*50, Math.cos(timer/200)*100);
-	body.origin = new Point(Math.sin(timer/50)*500, 0, Math.cos(timer/50)*500);
+	body.origin = new Point(Math.sin(timer/25)*500, Math.sin(timer/5)*30+30, Math.cos(timer/25)*500);
+	head.origin = new Point(0, Math.sin(timer/10)*20 -40, 50);
+	//head.origin = new Point(0,-10,50);
 
-	cube.rotation = [0, timer/80, 0];
+	cube.rotation = [0, -timer/100, 0];
 
-	body.rotation = [0, Math.PI/2 + timer/50, 0];
-	head.rotation = [Math.sin(timer/10)/2, Math.cos(timer/10)/2, 0];
+	body.rotation = [0, Math.PI/2 + timer/25 + Math.sin(timer/5)/5, Math.sin(timer/5)/12];
+	head.rotation = [Math.cos(timer/10)/20, Math.PI/8, 0];
 	cube.draw(true);
 	body.draw(false);
 	head.draw(false);
