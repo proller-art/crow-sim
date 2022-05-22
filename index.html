@@ -122,7 +122,7 @@ class Polygon {
 		if (wireframe) {
 			ctx.stroke();
 		} else {
-			ctx.fillStyle = "rgb(" + this.points[0].x + ", " + this.points[0].y + ", " + this.points[0].z + ")";
+			//ctx.fillStyle = "rgb(" + this.points[0].x + ", " + this.points[0].y + ", " + this.points[0].z + ")";
 			ctx.fill();
 		}
 	}
@@ -140,7 +140,7 @@ class Solid {
 		this.parent = parent;
 	}
 
-	// takes child position and returns new point that is relative to this solid's origin and rotation
+	// takes child point and returns new point that is relative to this solid's origin and rotation
 	relatePoint(point) {
 		//z axis
 		var sinTheta = Math.sin(this.rotation[2]);
@@ -173,6 +173,53 @@ class Solid {
 		point.x += this.origin.x;
 		point.y += this.origin.y;
 		point.z += this.origin.z;
+
+		if (this.parent) {
+			this.parent.relatePoint(point);
+		}
+	}
+
+	// takes child polygon and rotates it according to chain of parent polygons
+	relatePolygon(polygon) {
+		// z-axis
+		var sinTheta = Math.sin(this.rotation[2]);
+		var cosTheta = Math.cos(this.rotation[2]);
+
+		for (var j = 0; j < polygon.points.length; j++) {
+			var points = polygon.points;
+			var x = points[j].x;
+			var y = points[j].y;
+			points[j].x = x * cosTheta - y * sinTheta;
+			points[j].y = y * cosTheta + x * sinTheta;
+		}
+
+		// x-axis
+		sinTheta = Math.sin(this.rotation[0]);
+		cosTheta = Math.cos(this.rotation[0]);
+
+			for (var j = 0; j < polygon.points.length; j++) {
+			var points = polygon.points;
+			var y = points[j].y;
+			var z = points[j].z;
+			points[j].y = y * cosTheta - z * sinTheta;
+			points[j].z = z * cosTheta + y * sinTheta;
+		}
+
+		// y-axis
+		sinTheta = Math.sin(this.rotation[1]);
+		cosTheta = Math.cos(this.rotation[1]);
+
+		for (var j = 0; j < polygon.points.length; j++) {
+			var points = polygon.points;
+			var x = points[j].x;
+			var z = points[j].z;
+			points[j].x = x * cosTheta + z * sinTheta;
+			points[j].z = z * cosTheta - x * sinTheta;
+		}
+
+		if (this.parent) {
+			this.parent.relatePolygon(polygon);
+		}
 	}
 
 	// draw the solid at its origin and rotated according to angles
@@ -187,13 +234,9 @@ class Solid {
 
 			// rotate using origin as axis
 			// z-axis
-			if (this.parent) {
-				var sinTheta = Math.sin(this.rotation[2] + this.parent.rotation[2]);
-				var cosTheta = Math.cos(this.rotation[2] + this.parent.rotation[2]);
-			} else {
-				var sinTheta = Math.sin(this.rotation[2]);
-				var cosTheta = Math.cos(this.rotation[2]);
-			}
+			var sinTheta = Math.sin(this.rotation[2]);
+			var cosTheta = Math.cos(this.rotation[2]);
+
 			for (var j = 0; j < drawnPolygon.points.length; j++) {
 				var points = drawnPolygon.points;
 				var x = points[j].x;
@@ -203,13 +246,9 @@ class Solid {
 			}
 
 			// x-axis
-			if (this.parent) {
-				var sinTheta = Math.sin(this.rotation[0] + this.parent.rotation[0]);
-				var cosTheta = Math.cos(this.rotation[0] + this.parent.rotation[0]);
-			} else {
-				sinTheta = Math.sin(this.rotation[0]);
-				cosTheta = Math.cos(this.rotation[0]);
-			}
+			sinTheta = Math.sin(this.rotation[0]);
+			cosTheta = Math.cos(this.rotation[0]);
+
 			for (var j = 0; j < drawnPolygon.points.length; j++) {
 				var points = drawnPolygon.points;
 				var y = points[j].y;
@@ -219,19 +258,19 @@ class Solid {
 			}
 
 			// y-axis
-			if (this.parent) {
-				var sinTheta = Math.sin(this.rotation[1] + this.parent.rotation[1]);
-				var cosTheta = Math.cos(this.rotation[1] + this.parent.rotation[1]);
-			} else {
-				sinTheta = Math.sin(this.rotation[1]);
-				cosTheta = Math.cos(this.rotation[1]);
-			}
+			sinTheta = Math.sin(this.rotation[1]);
+			cosTheta = Math.cos(this.rotation[1]);
+
 			for (var j = 0; j < drawnPolygon.points.length; j++) {
 				var points = drawnPolygon.points;
 				var x = points[j].x;
 				var z = points[j].z;
 				points[j].x = x * cosTheta + z * sinTheta;
 				points[j].z = z * cosTheta - x * sinTheta;
+			}
+
+			if (this.parent) {
+				this.parent.relatePolygon(drawnPolygon);
 			}
 			
 
@@ -271,15 +310,6 @@ cubePoints.push(new Point(-50, 50, 50));
 cubePoints.push(new Point(50, 50, -50));
 cubePoints.push(new Point(50, 50, 50));
 
-/*cubePoints.push(new Point(0, 0, 0));
-cubePoints.push(new Point(0, 0, 100));
-cubePoints.push(new Point(100, 0, 0));
-cubePoints.push(new Point(100, 0, 100));
-cubePoints.push(new Point(0, 100, 0));
-cubePoints.push(new Point(0, 100, 100));
-cubePoints.push(new Point(100, 100, 0));
-cubePoints.push(new Point(100, 100, 100));*/
-
 const headPoints = [];
 headPoints.push(new Point(-3, -2, -6));
 headPoints.push(new Point(3, -2, -6));
@@ -297,6 +327,8 @@ bodyPoints.push(new Point(5, 6, -9));
 bodyPoints.push(new Point(0, 5, -18));
 bodyPoints.push(new Point(-5, 6, -9));
 bodyPoints.push(new Point(-4, -6, 5));
+
+
 
 const polyHead = [];
 polyHead.push(new Polygon([headPoints[5],headPoints[0],headPoints[1],headPoints[6]]));
@@ -318,8 +350,6 @@ polyBody.push(new Polygon([bodyPoints[5],bodyPoints[0],bodyPoints[6]]));
 polyBody.push(new Polygon([bodyPoints[3],bodyPoints[1],bodyPoints[2]]));
 polyBody.push(new Polygon([bodyPoints[4],bodyPoints[5],bodyPoints[3]]));
 
-
-
 const polyCube = [];
 polyCube.push(new Polygon([cubePoints[0], cubePoints[1], cubePoints[3], cubePoints[2]]));
 polyCube.push(new Polygon([cubePoints[4], cubePoints[5], cubePoints[7], cubePoints[6]]));
@@ -329,28 +359,21 @@ polyCube.push(new Polygon([cubePoints[3], cubePoints[1], cubePoints[5], cubePoin
 polyCube.push(new Polygon([cubePoints[2], cubePoints[3], cubePoints[7], cubePoints[6]]));
 
 const cube = new Solid(polyCube, new Point(0, 0, 0), 5);
-const cube2 = new Solid(polyCube, new Point(0, 100, 0), 1, cube);
-const cube3 = new Solid(polyCube, new Point(100, 0, 0), 1, cube);
 const body = new Solid(polyBody, new Point(0, 0, 0), 12, cube);
-const head = new Solid(polyHead, new Point(0, -60, 50), 12, cube);
+const head = new Solid(polyHead, new Point(0, -60, 50), 12, body);
 
 let timer = 0;
 function render() {
 	// Clear the scene from top left to bottom right
 	ctx.clearRect(0, 0, width, height);
 
-	cube.origin = new Point(Math.sin(timer/50)*200, Math.sin(timer/50)*50, Math.cos(timer/50)*200);
-	//cube3.origin = new Point(0, Math.sin(timer/50)*50, 0);
-	//body.origin = new Point(0, Math.sin(timer/50)*50, 0);
+	body.origin = new Point(Math.sin(timer/50)*500, 0, Math.cos(timer/50)*500);
 
-	cube.rotation = [timer/150, timer/100, timer/50];
-	//cube2.rotation = [0, 0, timer/100];
-	//cube3.rotation = [timer/50, timer/50, timer/50];
-	//body.rotation = [0, Math.PI/2, 0];
-	//head.rotation = [0, timer/100, 0];
-	cube.draw(false);
-	//cube2.draw(true);
-	//cube3.draw(true);
+	cube.rotation = [timer/600, timer/80, timer/100];
+
+	body.rotation = [0, Math.PI/2 + timer/50, 0];
+	head.rotation = [Math.sin(timer/10)/2, Math.cos(timer/10)/2, 0];
+	cube.draw(true);
 	body.draw(false);
 	head.draw(false);
 
