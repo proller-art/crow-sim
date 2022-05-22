@@ -367,9 +367,10 @@ function render() {
 	// Clear the scene from top left to bottom right
 	ctx.clearRect(0, 0, width, height);
 
+	//cube.origin = new Point(Math.sin(timer/100)*300, Math.sin(timer/150)*50, Math.cos(timer/200)*100);
 	body.origin = new Point(Math.sin(timer/50)*500, 0, Math.cos(timer/50)*500);
 
-	cube.rotation = [timer/600, timer/80, timer/100];
+	cube.rotation = [0, timer/80, 0];
 
 	body.rotation = [0, Math.PI/2 + timer/50, 0];
 	head.rotation = [Math.sin(timer/10)/2, Math.cos(timer/10)/2, 0];
