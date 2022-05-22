@@ -305,14 +305,14 @@ class Solid {
 					drawnPolygon.points[j].y += relatedPoint.y;
 					drawnPolygon.points[j].z += relatedPoint.z;
 				}
-				relatedPoint.draw();
+				//relatedPoint.draw();
 			} else {
 				for (var j = 0; j < drawnPolygon.points.length; j++) {
 					drawnPolygon.points[j].x += this.origin.x;
 					drawnPolygon.points[j].y += this.origin.y;
 					drawnPolygon.points[j].z += this.origin.z;
 				}
-				this.origin.draw();
+				//this.origin.draw();
 			}
 
 			// draw the polygon
@@ -384,6 +384,9 @@ const cube = new Solid(polyCube, new Point(0, 0, 0), 3);
 const body = new Solid(polyBody, new Point(0, 0, 0), 12);
 const head = new Solid(polyHead, new Point(0, -5, 4), 1, body);
 
+const body2 = new Solid(polyBody, new Point(0, 0, 0), 12);
+const head2 = new Solid(polyHead, new Point(0, -5, 4), 1, body2);
+
 let timer = 0;
 function render() {
 	// Clear the scene from top left to bottom right
@@ -391,16 +394,24 @@ function render() {
 
 	//cube.origin = new Point(Math.sin(timer/100)*300, Math.sin(timer/150)*50, Math.cos(timer/200)*100);
 	body.origin = new Point(Math.sin(timer/25)*500, Math.sin(timer/5)*30+30, Math.cos(timer/25)*500);
+	body2.origin = new Point(-Math.sin(timer/25)*500, Math.sin(timer/5)*30+30, -Math.cos(timer/25)*500);
 	head.origin = new Point(0, Math.sin(timer/10)*20 -40, 50);
+	head2.origin = new Point(0, Math.sin(timer/10)*20 -40, 50);
 	//head.origin = new Point(0,-10,50);
 
 	cube.rotation = [0, -timer/100, 0];
 
 	body.rotation = [0, Math.PI/2 + timer/25 + Math.sin(timer/5)/5, Math.sin(timer/5)/12];
 	head.rotation = [Math.cos(timer/10)/20, Math.PI/8, 0];
+	body2.rotation = [0, Math.PI/2*3 + timer/25 + Math.sin(timer/5)/5, Math.sin(timer/5)/12];
+	//body2.rotation = [timer/10, timer/15, timer/20];
+	head2.rotation = [Math.cos(timer/10)/20, Math.PI/8, 0];
+
 	cube.draw(true);
 	body.draw(false);
 	head.draw(false);
+	body2.draw(false);
+	head2.draw(false);
 
 	timer++;
   
